@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  # Container chinh chua Java/Maven de chay Spring Boot backend
+  app:
+    image: mcr.microsoft.com/devcontainers/java:1-17-bullseye
+    volumes:
+      - ../..:/workspaces:cached
+    # Dung chung network voi mysql -> app co the goi "localhost:3306" de ket noi DB
+    network_mode: service:mysql
+    command: sleep infinity
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/petcare_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: petcare_password
+      SERVER_PORT: 8080
+
+  # MySQL database, tu khoi dong cung Codespace, du lieu duoc luu ben ngoai container (volume)
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: petcare_password
+      MYSQL_DATABASE: petcare_db
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

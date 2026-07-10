@@ -1,0 +1,33 @@
+{
+  "name": "PetCare System (Spring Boot + MySQL)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "installMaven": true
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "ritwickdey.LiveServer",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+
+  // 8080: backend Spring Boot | 3306: MySQL | 5500: Live Server cho frontend
+  "forwardPorts": [8080, 3306, 5500],
+  "portsAttributes": {
+    "8080": { "label": "Backend API (Spring Boot)", "onAutoForward": "notify" },
+    "5500": { "label": "Frontend (Live Server)", "onAutoForward": "openBrowser" }
+  },
+
+  "postCreateCommand": "echo 'Doi MySQL container san sang...' && sleep 10 && mysql -h localhost -uroot -ppetcare_password -e 'SELECT 1' petcare_db && echo 'MySQL da san sang!'"
+}

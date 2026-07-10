@@ -1,0 +1,17 @@
+# Backend (Maven/Java)
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/.idea/
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Logs
+*.log
