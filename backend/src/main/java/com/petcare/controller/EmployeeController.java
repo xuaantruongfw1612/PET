@@ -38,6 +38,7 @@ public class EmployeeController {
             return ResponseEntity.badRequest().body(Map.of("message", "Username da ton tai"));
         }
         data.setStatus("ACTIVE");
+        data.setRole(normalizeRole(data.getRole()));
         Employee saved = employeeRepository.save(data);
         return ResponseEntity.ok(saved);
     }
@@ -50,8 +51,30 @@ public class EmployeeController {
         existing.setEmail(data.getEmail());
         existing.setPermissions(data.getPermissions());
         existing.setStatus(data.getStatus());
+        if (data.getRole() != null) existing.setRole(normalizeRole(data.getRole()));
         employeeRepository.save(existing);
         return ResponseEntity.ok(existing);
+    }
+
+    // updateUserRole(id, role): Boolean -> khop voi ham updateUserRole ben frontend (admin/consultant/sales)
+    @PatchMapping("/{id}/role-type")
+    public ResponseEntity<?> updateRoleType(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        Employee employee = employeeRepository.findById(id).orElse(null);
+        if (employee == null) return ResponseEntity.notFound().build();
+        employee.setRole(normalizeRole(body.get("role")));
+        employeeRepository.save(employee);
+        return ResponseEntity.ok(employee);
+    }
+
+    // Chuan hoa role ve HOA, chi cho phep 3 gia tri khop voi frontend (admin/consultant/sales).
+    // "admin" duoc tao thu cong trong DB (khong cho tu dang ky qua form), nhu ghi chu trong README.
+    private String normalizeRole(String role) {
+        if (role == null) return "CONSULTANT";
+        String upper = role.trim().toUpperCase();
+        return switch (upper) {
+            case "ADMIN", "CONSULTANT", "SALES" -> upper;
+            default -> "CONSULTANT";
+        };
     }
 
     // deleteEmployee(id): Boolean

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+// Dung voi class Product trong diagram
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {

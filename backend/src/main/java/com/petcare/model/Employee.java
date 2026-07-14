@@ -13,4 +13,7 @@ import lombok.NoArgsConstructor;
 public class Employee extends User {
     // permissions luu dang chuoi phan cach boi dau phay, vi du: "MANAGE_ORDER,MANAGE_PRODUCT"
     private String permissions;
+
+    // Khop voi 3 role ben frontend: ADMIN / CONSULTANT / SALES (luu HOA, tra ve FE se lowercase lai)
+    private String role = "CONSULTANT";
 }

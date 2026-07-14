@@ -1,8 +1,18 @@
+-- ================================================
+-- PETCARE SYSTEM - Database Init Script
+-- Chi can chay script nay de TAO DATABASE.
+-- Cac BANG se duoc Hibernate tu tao/cap nhat khi chay Spring Boot
+-- (nho spring.jpa.hibernate.ddl-auto=update trong application.properties)
+-- ================================================
+
 CREATE DATABASE IF NOT EXISTS petcare_db
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
 USE petcare_db;
+
+-- (Optional) Du lieu mau de test nhanh sau khi Hibernate da tao bang.
+-- Chay phan INSERT nay SAU KHI da start app Spring Boot lan dau (de bang duoc tao).
 
 -- INSERT INTO users (username, password, email, status) VALUES
 -- ('admin1', '123456', 'admin1@petcare.com', 'ACTIVE');

@@ -20,6 +20,7 @@ public class Cart {
     private Long customerId; // 1 customer - 1 cart
 
     private String discountCode;
+    private Double discountPercent; // vd 10.0 nghia la giam 10%, lay tu Promotion khi apply ma
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();

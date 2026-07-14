@@ -3,11 +3,14 @@ package com.petcare.controller;
 import com.petcare.model.Cart;
 import com.petcare.model.CartItem;
 import com.petcare.model.Product;
+import com.petcare.model.Promotion;
 import com.petcare.repository.CartRepository;
 import com.petcare.repository.ProductRepository;
+import com.petcare.repository.PromotionRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +21,12 @@ public class CartController {
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final PromotionRepository promotionRepository;
 
-    public CartController(CartRepository cartRepository, ProductRepository productRepository) {
+    public CartController(CartRepository cartRepository, ProductRepository productRepository, PromotionRepository promotionRepository) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
+        this.promotionRepository = promotionRepository;
     }
 
     // Lay cart cua 1 khach hang, neu chua co thi tao moi
@@ -63,18 +68,26 @@ public class CartController {
         return ResponseEntity.ok(cart);
     }
 
-    // applyDiscountCode(code): Boolean
+    // applyDiscountCode(code): Boolean -> tra bang Promotion that (thay vi list cung nhu truoc)
     @PostMapping("/{customerId}/discount")
     public ResponseEntity<?> applyDiscountCode(@PathVariable Long customerId, @RequestBody Map<String, String> body) {
         Cart cart = getCart(customerId);
         String code = body.get("code");
 
-        // Demo: chi cho phep 1 vai ma giam gia co dinh, ban co the thay bang bang discount_codes trong DB
-        List<String> validCodes = List.of("SALE10", "PETLOVER", "WELCOME");
-        if (!validCodes.contains(code)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia khong hop le"));
+        Promotion promo = promotionRepository.findByCode(code).orElse(null);
+        if (promo == null || !Boolean.TRUE.equals(promo.getIsActive())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia khong ton tai hoac da bi tat"));
         }
+        LocalDate today = LocalDate.now();
+        if (promo.getStartDate() != null && today.isBefore(promo.getStartDate())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia chua den ngay ap dung"));
+        }
+        if (promo.getEndDate() != null && today.isAfter(promo.getEndDate())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia da het han"));
+        }
+
         cart.setDiscountCode(code);
+        cart.setDiscountPercent(promo.getDiscountPercent());
         cartRepository.save(cart);
         return ResponseEntity.ok(cart);
     }

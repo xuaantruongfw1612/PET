@@ -23,8 +23,19 @@ public class Order {
     private LocalDateTime orderDate = LocalDateTime.now();
     private Double totalAmount;
 
-    // PENDING / APPROVED / REJECTED / SHIPPING / COMPLETED
+    // PENDING -> PROCESSING -> COMPLETED, hoac PENDING -> CANCELLED
+    // (khop dung 4 gia tri Order['status'] ben frontend, ho tu .toLowerCase() lai)
     private String status = "PENDING";
+
+    // Ly do huy don, tach rieng thay vi noi vao status (giu status "sach" cho frontend so sanh enum)
+    private String cancelReason;
+
+    // Thong tin giao hang - frontend goi la "ShippingInfo"
+    private String shippingFullName;
+    private String shippingPhone;
+    private String shippingAddress;
+    private String shippingNotes;
+    private String paymentMethod;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails = new ArrayList<>();

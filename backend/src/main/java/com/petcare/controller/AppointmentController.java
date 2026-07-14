@@ -111,22 +111,40 @@ public class AppointmentController {
     }
 
     // approveAppointment(id): Boolean
+    // Frontend goi endpoint nay khi muon chuyen sang trang thai "confirmed" (status === 'confirmed' -> /approve)
+    // -> set status = CONFIRMED de khop dung (thay vi APPROVED nhu ban dau).
     @PatchMapping("/{id}/approve")
     public ResponseEntity<?> approveAppointment(@PathVariable Long id) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);
         if (appointment == null) return ResponseEntity.notFound().build();
-        appointment.setStatus("APPROVED");
+        appointment.setStatus("CONFIRMED");
         appointmentRepository.save(appointment);
         return ResponseEntity.ok(appointment);
     }
 
     // confirmAppointment(id): Boolean
+    // Frontend goi endpoint nay khi muon chuyen sang trang thai "completed" (status === 'completed' -> /confirm)
+    // -> set status = COMPLETED de khop dung (thay vi CONFIRMED nhu ban dau).
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<?> confirmAppointment(@PathVariable Long id) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);
         if (appointment == null) return ResponseEntity.notFound().build();
-        appointment.setStatus("CONFIRMED");
+        appointment.setStatus("COMPLETED");
         appointmentRepository.save(appointment);
+        return ResponseEntity.ok(appointment);
+    }
+
+    // updateAppointmentStatus chung - dung cho truong hop 'pending'/'cancelled' ben frontend
+    // (fallback trong updateAppointmentStatus() cua frontend, hien tai dang goi thieu body,
+    //  can 1 dong sua ben frontend de gui {status} len - xem API_DOCS.md).
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        Appointment appointment = appointmentRepository.findById(id).orElse(null);
+        if (appointment == null) return ResponseEntity.notFound().build();
+        if (body != null && body.get("status") != null) {
+            appointment.setStatus(body.get("status").toUpperCase());
+            appointmentRepository.save(appointment);
+        }
         return ResponseEntity.ok(appointment);
     }
 }

@@ -38,6 +38,8 @@ public class AuthController {
     }
 
     // login(): Boolean -> tra ve thong tin user + role neu dung
+    // Frontend can 1 trong 4 chuoi: "customer" | "consultant" | "sales" | "admin"
+    // (ho tu .toLowerCase() chuoi minh tra ve, nen minh tra HOA cho dung quy uoc, ho tu ha thanh thuong)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String username = body.get("username");
@@ -46,8 +48,9 @@ public class AuthController {
         return userRepository.findByUsername(username)
                 .filter(u -> u.getPassword().equals(password))
                 .<ResponseEntity<?>>map(u -> {
-                    boolean isEmployee = employeeRepository.existsById(u.getUserId());
-                    String role = isEmployee ? "EMPLOYEE" : "CUSTOMER";
+                    String role = employeeRepository.findById(u.getUserId())
+                            .map(emp -> emp.getRole() != null ? emp.getRole() : "CONSULTANT")
+                            .orElse("CUSTOMER");
                     return ResponseEntity.ok(Map.of(
                             "userId", u.getUserId(),
                             "username", u.getUsername(),

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiRequest } from '../lib/api';
 import { INITIAL_SERVICES, INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_PETS } from '../lib/mockData';
 
-const USE_API = false;
+const USE_API = true;
 
 interface AppState {
   users: User[];

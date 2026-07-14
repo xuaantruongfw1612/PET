@@ -162,7 +162,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"emp1\",\n  \"password\": \"123456\",\n  \"email\": \"emp1@petcare.com\",\n  \"permissions\": \"MANAGE_ORDER,MANAGE_PRODUCT\"\n}"
+              "raw": "{\n  \"username\": \"emp1\",\n  \"password\": \"123456\",\n  \"email\": \"emp1@petcare.com\",\n  \"permissions\": \"MANAGE_ORDER,MANAGE_PRODUCT\",\n  \"role\": \"SALES\"\n}"
             }
           }
         },
@@ -188,7 +188,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"emp1@petcare.com\",\n  \"permissions\": \"MANAGE_ORDER\",\n  \"status\": \"ACTIVE\"\n}"
+              "raw": "{\n  \"email\": \"emp1@petcare.com\",\n  \"permissions\": \"MANAGE_ORDER\",\n  \"status\": \"ACTIVE\",\n  \"role\": \"SALES\"\n}"
             }
           }
         },
@@ -238,6 +238,33 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"permissions\": \"MANAGE_ORDER,MANAGE_APPOINTMENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Role Type (admin/consultant/sales)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/1/role-type",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "employees",
+                "1",
+                "role-type"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\"\n}"
             }
           }
         }
@@ -484,7 +511,7 @@
           }
         },
         {
-          "name": "Apply Discount Code",
+          "name": "Apply Discount Code (tra bang Promotion that)",
           "request": {
             "method": "POST",
             "header": [
@@ -507,6 +534,105 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"code\": \"SALE10\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotions",
+      "item": [
+        {
+          "name": "Get Promotion List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "promotions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Promotion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "promotions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SALE10\",\n  \"discountPercent\": 10.0,\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2026-12-31\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Promotion",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions/1",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "promotions",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SALE10\",\n  \"discountPercent\": 15.0,\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2026-12-31\",\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Promotion",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/promotions/1",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "promotions",
+                "1"
+              ]
             }
           }
         }
@@ -580,7 +706,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customerId\": 1\n}"
+              "raw": "{\n  \"customerId\": 1,\n  \"shippingInfo\": {\n    \"fullName\": \"Nguyen Van A\",\n    \"phone\": \"0909123456\",\n    \"address\": \"123 Le Loi, Q1\",\n    \"notes\": \"\"\n  },\n  \"paymentMethod\": \"CASH\"\n}"
             }
           }
         },
@@ -612,7 +738,7 @@
           }
         },
         {
-          "name": "Approve Order",
+          "name": "Approve Order (lan 1: PENDING->PROCESSING, lan 2: ->COMPLETED)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1109,7 +1235,7 @@
           }
         },
         {
-          "name": "Approve Appointment",
+          "name": "Approve Appointment (-> CONFIRMED)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1132,7 +1258,7 @@
           }
         },
         {
-          "name": "Confirm Appointment",
+          "name": "Confirm Appointment (-> COMPLETED)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1151,6 +1277,33 @@
                 "1",
                 "confirm"
               ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Appointment (status chung)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/1/status",
+              "host": [
+                "{{baseUrl}}/api"
+              ],
+              "path": [
+                "appointments",
+                "1",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}"
             }
           }
         }
