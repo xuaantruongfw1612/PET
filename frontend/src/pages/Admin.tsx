@@ -5,8 +5,10 @@ import { Navigate } from 'react-router-dom';
 import { Users, Calendar, ShoppingBag, PackageSearch, Activity, CheckCircle, XCircle, Stethoscope, Tag, MessageSquare, UserCircle } from 'lucide-react';
 
 export function Admin() {
-  const { currentUser, appointments, updateAppointmentStatus, orders, updateOrderStatus, users, products, addProduct, updateProduct, deleteProduct, services, addService, updateService, deleteService, promotions, addPromotion, updatePromotion, deletePromotion } = useAppContext();
+  const { currentUser, appointments, updateAppointmentStatus, orders, updateOrderStatus, users, products, addProduct, updateProduct, deleteProduct, services, addService, updateService, deleteService, promotions, addPromotion, updatePromotion, deletePromotion, chats, addChatMessage } = useAppContext();
   const [userSearch, setUserSearch] = useState('');
+  const [activeChatUserId, setActiveChatUserId] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState('');
   const [viewingPetUserId, setViewingPetUserId] = useState<string | null>(null);
   const { pets } = useAppContext();
   const [activeTab, setActiveTab] = useState<'appointments' | 'orders' | 'products' | 'users' | 'staffs' | 'revenue' | 'services' | 'promotions' | 'chat' | 'profile'>(
@@ -795,7 +797,7 @@ export function Admin() {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-slate-800">{formatCurrency(order.totalAmount)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest border ${order.status === 'pending' ? 'border-yellow-500 text-yellow-500 bg-yellow-500/10' : order.status === 'processing' ? 'border-blue-500 text-blue-500 bg-blue-500/10' : order.status === 'completed' ? 'border-green-500 text-green-500 bg-green-500/10' : 'border-red-500 text-red-500 bg-red-500/10'}`}>
-                                    {orderStatusLabels[order.status]}
+                                    {statusLabels[order.status]}
                                   </span>
                                 </td>
                               </tr>
@@ -1035,63 +1037,75 @@ export function Admin() {
                     <input type="text" placeholder="Tìm kiếm khách hàng..." className="w-full px-4 py-3 bg-white rounded-2xl border border-orange-200 text-sm placeholder-orange-300 focus:outline-none focus:border-orange-400" />
                   </div>
                   <div className="flex-1 overflow-y-auto">
-                    <div className="p-4 border-b border-orange-100 bg-orange-50/80 cursor-pointer">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-sm text-slate-800 uppercase tracking-widest">Khách Hàng 1</span>
-                        <span className="text-[10px] font-bold text-orange-400">10:45 AM</span>
-                      </div>
-                      <div className="text-xs text-slate-500 truncate">Cho mình hỏi về dịch vụ tắm sấy chó Corgi...</div>
-                    </div>
-                    <div className="p-4 border-b border-orange-100 hover:bg-orange-50/50 cursor-pointer opacity-70">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-sm text-slate-800 uppercase tracking-widest">Nguyễn Văn A</span>
-                        <span className="text-[10px] font-bold text-orange-400">Hôm qua</span>
-                      </div>
-                      <div className="text-xs text-slate-500 truncate">Cảm ơn shop.</div>
-                    </div>
+                    {Object.keys(chats).map(userId => {
+                      const userMsgs = chats[userId];
+                      const lastMsg = userMsgs[userMsgs.length - 1];
+                      const user = users.find(u => u.id === userId);
+                      const isUnread = lastMsg && lastMsg.senderId !== 'admin';
+
+                      return (
+                        <div key={userId} onClick={() => setActiveChatUserId(userId)} className={`p-4 border-b border-orange-100 cursor-pointer ${activeChatUserId === userId ? 'bg-orange-50/80' : 'hover:bg-orange-50/50 opacity-70'}`}>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className={`font-bold text-sm text-slate-800 uppercase tracking-widest ${isUnread ? 'text-orange-500' : ''}`}>{user ? user.name : 'Khách hàng'}</span>
+                            <span className="text-[10px] font-bold text-orange-400">
+                              {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                            </span>
+                          </div>
+                          <div className={`text-xs truncate ${isUnread ? 'text-slate-800 font-bold' : 'text-slate-500'}`}>{lastMsg ? lastMsg.text : ''}</div>
+                        </div>
+                      );
+                    })}
+                    {Object.keys(chats).length === 0 && (
+                      <div className="p-4 text-center text-xs text-slate-500">Chưa có tin nhắn nào</div>
+                    )}
                   </div>
                 </div>
                 {/* Chat Area */}
                 <div className="w-2/3 flex flex-col">
-                  <div className="p-4 border-b border-orange-100 flex justify-between items-center bg-white">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 font-bold">KH</div>
-                      <div>
-                        <div className="font-bold text-sm text-slate-800 uppercase tracking-widest">Khách Hàng 1</div>
-                        <div className="text-[10px] text-green-500 font-bold uppercase tracking-widest">Đang online</div>
+                  {activeChatUserId ? (
+                    <>
+                      <div className="p-4 border-b border-orange-100 flex justify-between items-center bg-white">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 font-bold">
+                            {users.find(u => u.id === activeChatUserId)?.name.charAt(0) || 'KH'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm text-slate-800 uppercase tracking-widest">{users.find(u => u.id === activeChatUserId)?.name || 'Khách Hàng'}</div>
+                            <div className="text-[10px] text-green-500 font-bold uppercase tracking-widest">Đang online</div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <button className="px-4 py-2 border border-orange-200 text-orange-500 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-orange-50 transition-colors">
-                      Tạo phiếu tư vấn
-                    </button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
-                    <div className="flex justify-start">
-                      <div className="bg-white border border-orange-100 text-slate-800 p-4 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm">
-                        <p className="text-sm">Chào shop, bé Corgi nhà mình 8kg thì tắm sấy giá bao nhiêu ạ?</p>
-                        <span className="text-[10px] text-orange-400 font-bold mt-2 block">10:45 AM</span>
+                      <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 flex flex-col">
+                        {(chats[activeChatUserId] || []).map(msg => (
+                          <div key={msg.id} className={`flex ${msg.senderId === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`${msg.senderId === 'admin' ? 'bg-orange-500 text-white rounded-tr-none' : 'bg-white border border-orange-100 text-slate-800 rounded-tl-none'} p-4 rounded-2xl max-w-[80%] shadow-sm`}>
+                              <p className="text-sm">{msg.text}</p>
+                              <span className={`text-[10px] font-bold mt-2 block ${msg.senderId === 'admin' ? 'text-orange-200 text-right' : 'text-orange-400'}`}>
+                                {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="bg-orange-500 text-white p-4 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm">
-                        <p className="text-sm">Chào bạn, với bé Corgi 8kg thì gói tắm sấy vệ sinh bên mình là 150.000đ nhé. Bao gồm tắm ướt, sấy khô, vệ sinh tai và cắt móng ạ.</p>
-                        <span className="text-[10px] text-orange-200 font-bold mt-2 block text-right">10:48 AM</span>
+                      <div className="p-4 border-t border-orange-100 bg-white">
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!chatInput.trim()) return;
+                          await addChatMessage(activeChatUserId, { senderId: 'admin', text: chatInput });
+                          setChatInput('');
+                        }} className="flex gap-4">
+                          <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Nhập tin nhắn..." className="flex-1 px-4 py-3 bg-orange-50/50 rounded-2xl border border-orange-200 text-sm focus:outline-none focus:border-orange-400" />
+                          <button type="submit" className="px-6 py-3 bg-orange-500 text-white rounded-full font-bold text-xs uppercase tracking-widest hover:bg-orange-600 transition-colors">
+                            Gửi
+                          </button>
+                        </form>
                       </div>
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+                      Chọn một khách hàng để bắt đầu chat
                     </div>
-                  </div>
-                  <div className="p-4 border-t border-orange-100 bg-white">
-                    <div className="flex gap-2 mb-2">
-                      <span className="px-3 py-1 bg-orange-50 border border-orange-100 text-[10px] text-orange-500 rounded-full cursor-pointer hover:bg-orange-100 font-bold">Báo giá tắm sấy</span>
-                      <span className="px-3 py-1 bg-orange-50 border border-orange-100 text-[10px] text-orange-500 rounded-full cursor-pointer hover:bg-orange-100 font-bold">Báo giá grooming</span>
-                      <span className="px-3 py-1 bg-orange-50 border border-orange-100 text-[10px] text-orange-500 rounded-full cursor-pointer hover:bg-orange-100 font-bold">Giờ mở cửa</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <input type="text" placeholder="Nhập tin nhắn..." className="flex-1 px-4 py-3 bg-orange-50/50 rounded-2xl border border-orange-200 text-sm focus:outline-none focus:border-orange-400" />
-                      <button className="px-6 py-3 bg-orange-500 text-white rounded-full font-bold text-xs uppercase tracking-widest hover:bg-orange-600 transition-colors">
-                        Gửi
-                      </button>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,27 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { useAppContext } from '../store';
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{sender: 'user' | 'bot', text: string}[]>([
-    { sender: 'bot', text: 'Xin chào! PetCare có thể giúp gì cho bạn?' }
-  ]);
   const [input, setInput] = useState('');
-  const { currentUser } = useAppContext();
+  const { currentUser, chats, addChatMessage } = useAppContext();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userChats = currentUser ? (chats[currentUser.id] || []) : [];
+  const defaultMessages = [{ senderId: 'admin', text: 'Xin chào! PetCare có thể giúp gì cho bạn?', timestamp: new Date().toISOString() }];
+  
+  const displayMessages = [...defaultMessages, ...userChats].map(msg => ({
+    sender: msg.senderId === 'admin' ? 'bot' : 'user',
+    text: msg.text
+  }));
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (isOpen) scrollToBottom();
+  }, [displayMessages.length, isOpen]);
 
   if (currentUser && currentUser.role !== 'customer') return null;
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !currentUser) return;
 
-    setMessages(prev => [...prev, { sender: 'user', text: input }]);
+    const messageText = input.trim();
     setInput('');
+    await addChatMessage(currentUser.id, { senderId: currentUser.id, text: messageText });
     
-    setTimeout(() => {
-      setMessages(prev => [...prev, { sender: 'bot', text: 'Cảm ơn bạn đã liên hệ! Nhân viên tư vấn của chúng tôi sẽ phản hồi trong giây lát.' }]);
-    }, 1000);
+    // Check if it's the first message, simulate bot reply
+    if (userChats.length === 0) {
+      setTimeout(() => {
+        addChatMessage(currentUser.id, { senderId: 'admin', text: 'Cảm ơn bạn đã liên hệ! Nhân viên tư vấn của chúng tôi sẽ phản hồi trong giây lát.' });
+      }, 1000);
+    }
   };
 
   return (
@@ -45,11 +63,17 @@ export function ChatWidget() {
           </div>
           
           <div className="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3">
+<<<<<<< Updated upstream
             {messages.map((msg, i) => (
               <div key={i} className={`max-w-[80%] p-3 rounded-2xl text-sm \${msg.sender === 'user' ? 'bg-orange-500 text-white self-end rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 self-start rounded-tl-sm'}`}>
+=======
+            {displayMessages.map((msg, i) => (
+              <div key={i} className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-orange-500 text-white self-end rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 self-start rounded-tl-sm'}`}>
+>>>>>>> Stashed changes
                 {msg.text}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-3 bg-white border-t border-slate-100">

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiRequest } from '../lib/api';
 import { INITIAL_SERVICES, INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_PETS } from '../lib/mockData';
 
-const USE_API = false;
+const USE_API = true;
 
 interface AppState {
   users: User[];
@@ -16,6 +16,7 @@ interface AppState {
   appointments: Appointment[];
   orders: Order[];
   cart: CartItem[];
+  chats: Record<string, import('../types').ChatMessage[]>;
 }
 
 interface AppContextType extends AppState {
@@ -47,6 +48,8 @@ interface AppContextType extends AppState {
   updateUserRole: (id: string, role: Role) => Promise<void>;
   toggleUserLock: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  addChatMessage: (userId: string, message: Omit<import('../types').ChatMessage, 'id' | 'timestamp'>) => Promise<void>;
+  forgotPassword: (email: string) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -86,6 +89,8 @@ const loadState = (): AppState => {
       }
     });
 
+    if (!parsed.chats) parsed.chats = {};
+
     return parsed;
   }
   return {
@@ -97,7 +102,8 @@ const loadState = (): AppState => {
     promotions: [],
     appointments: [],
     orders: [],
-    cart: []
+    cart: [],
+    chats: {}
   };
 };
 
@@ -656,6 +662,29 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
     setState(prev => ({ ...prev, promotions: prev.promotions.filter(p => p.id !== id) }));
   };
 
+  const addChatMessage = async (userId: string, message: Omit<import('../types').ChatMessage, 'id' | 'timestamp'>) => {
+    const newMessage = {
+      ...message,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString()
+    };
+    setState(prev => {
+      const userChats = prev.chats[userId] || [];
+      return {
+        ...prev,
+        chats: {
+          ...prev.chats,
+          [userId]: [...userChats, newMessage]
+        }
+      };
+    });
+  };
+
+  const forgotPassword = async (email: string) => {
+    // In a real app, this would send a reset email
+    return true; // Simulate success
+  };
+
   return (
     <AppContext.Provider value={{
       ...state,
@@ -666,7 +695,8 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
       updateProfile, updatePet, deletePet,
       addService, updateService, deleteService,
       addPromotion, updatePromotion, deletePromotion,
-      addUser, updateUserRole, toggleUserLock, deleteUser
+      addUser, updateUserRole, toggleUserLock, deleteUser,
+      addChatMessage, forgotPassword
     }}>
       {children}
     </AppContext.Provider>
