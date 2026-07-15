@@ -26,7 +26,7 @@ export function Home() {
           </p>
           <div className="flex gap-4 mt-8">
             {(!currentUser || currentUser.role === 'customer') ? (
-              <Link to="/dashboard?tab=book" className="px-8 py-4 bg-white text-black font-semibold text-sm rounded-full hover:bg-slate-200 transition-colors">
+              <Link to="/dashboard?tab=book" className="px-8 py-4 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-200 transition-colors">
                 Đặt lịch khám
               </Link>
             ) : (
@@ -34,7 +34,7 @@ export function Home() {
                 Quản lý lịch hẹn
               </Link>
             )}
-            <Link to="/shop" className="px-8 py-4 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-800 transition-colors">
+            <Link to="/shop" className="px-8 py-4 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-200 transition-colors">
               Nhà thuốc
             </Link>
           </div>

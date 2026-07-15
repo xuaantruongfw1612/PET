@@ -101,7 +101,7 @@ export function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <PawPrint className="h-5 w-5 text-orange-500" />
-            <span className="text-sm font-bold text-slate-800 tracking-tight">PetCare V1</span>
+            <span className="text-sm font-bold text-slate-800 tracking-tight">PetCare</span>
           </div>
           <p className="text-[10px] uppercase tracking-wider font-semibold text-orange-400 font-bold">© 2026 PetCare. All rights reserved.</p>
         </div>
