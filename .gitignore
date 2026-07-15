@@ -5,6 +5,12 @@ backend/*.iml
 backend/.idea/
 backend/.env
 
+# Frontend (Vite/Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
 # IDE
 .vscode/
 .idea/
