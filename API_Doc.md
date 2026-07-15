@@ -1,4 +1,3 @@
-s · MD
 # API Docs — PetCare System
  
 Base URL local: `http://localhost:8080/api`

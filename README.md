@@ -83,8 +83,4 @@ Customer thì đăng ký bình thường qua UI.
  
 Đổi API nào (thêm field, đổi path...) thì nhớ sửa lại `API_DOCS.md` luôn, không thì bên kia code sẽ bị lệch mà không biết.
  
-## Vài chỗ làm đơn giản, biết trước cho khỏi bất ngờ
- 
-- Đăng nhập không dùng JWT, chỉ so username/password rồi lưu userId + role ở phía client. Đủ để chạy demo, không phải thứ đem lên production.
-- Thanh toán (`PaymentGateway`) luôn trả về thành công, không gọi cổng thanh toán thật nào cả.
-- Report đơn hàng trả JSON tổng hợp số liệu, không xuất file PDF/Excel.
+## Lưu ý trong dự án có một số chỗ được làm đơn giản hoá (Mang tính chất demo)
