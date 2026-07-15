@@ -46,7 +46,7 @@ export function ChatWidget() {
           
           <div className="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-3">
             {messages.map((msg, i) => (
-              <div key={i} className={`max-w-[80%] p-3 rounded-2xl text-sm \${msg.sender === 'user' ? 'bg-orange-500 text-white self-end rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 self-start rounded-tl-sm'}`}>
+              <div key={i} className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'user' ? 'bg-orange-500 text-white self-end rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 self-start rounded-tl-sm'}`}>
                 {msg.text}
               </div>
             ))}
