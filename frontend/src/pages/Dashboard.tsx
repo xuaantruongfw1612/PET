@@ -203,7 +203,7 @@ export function Dashboard() {
               <h2 className="text-2xl font-bold text-slate-800 tracking-tight text-slate-800">Hồ sơ thú cưng</h2>
               <button
                 onClick={() => setShowPetForm(!showPetForm)}
-                className="inline-flex items-center gap-3 px-6 py-3 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-3 px-6 py-3 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-200 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Thêm hồ sơ
@@ -334,9 +334,9 @@ export function Dashboard() {
                     </select>
                   </div>
                 </div>
-                <button type="submit" className="w-full flex justify-center py-5 px-6 bg-white text-black font-black uppercase tracking-widest text-sm hover:bg-slate-200 transition-colors mt-8">
-                  Xác nhận đặt lịch
-                </button>
+                <button type="submit" className="w-full flex justify-center py-5 px-6 bg-white text-black font-black uppercase tracking-widest text-sm hover:bg-slate-200 hover:rounded-xl transition-all duration-300 mt-8">
+  Nội dung nút
+</button>
               </form>
             )}
           </div>

@@ -44,7 +44,7 @@ export function Cart() {
       <div className="text-center py-32 border border-orange-100 bg-white rounded-3xl shadow-sm">
         <h2 className="text-3xl font-bold text-slate-800 tracking-tight text-slate-800 mb-4">Giỏ hàng trống</h2>
         <p className="text-orange-400 font-sans text-sm uppercase tracking-widest mb-8">Chưa có sản phẩm nào.</p>
-        <Link to="/shop" className="px-6 py-3 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-800">
+        <Link to="/shop" className="px-6 py-3 border border-orange-200 text-slate-800 font-semibold text-sm rounded-full hover:bg-slate-200">
           Xem vật tư & thuốc
         </Link>
       </div>

@@ -54,7 +54,7 @@ export function Login() {
           <h2 className="mt-6 text-3xl font-bold text-slate-800 tracking-tight text-slate-800">
             {isLogin ? 'Đăng nhập' : 'Đăng ký tài khoản'}
           </h2>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-wider font-semibold text-orange-400">
+          <p className="mt-2 text-[15px] font-bold uppercase tracking-wider font-semibold text-orange-400">
             {isLogin ? 'Hoặc ' : 'Đã có tài khoản? '}
             <button
               onClick={() => {
