@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Dung voi class Service trong diagram
 @RestController
 @RequestMapping("/api/services")
 public class ServiceController {

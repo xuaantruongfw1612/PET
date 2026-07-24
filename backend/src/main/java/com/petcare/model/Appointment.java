@@ -32,8 +32,6 @@ public class Appointment {
     @Column(nullable = false)
     private String status;
 
-    // Theo dung so do: Appointment 1 -*-> AppointmentService -*-> 1 Service
-    // (khong con @ManyToMany truc tiep voi Service nua)
     @OneToMany(mappedBy = "appointment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AppointmentService> appointmentServices = new ArrayList<>();
 

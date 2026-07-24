@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { Users, Calendar, ShoppingBag, PackageSearch, Activity, CheckCircle, XCircle, Stethoscope, Tag, MessageSquare, UserCircle } from 'lucide-react';
 
 export function Admin() {
-  const { currentUser, appointments, updateAppointmentStatus, orders, updateOrderStatus, users, products, addProduct, updateProduct, deleteProduct, services, addService, updateService, deleteService, promotions, addPromotion, updatePromotion, deletePromotion } = useAppContext();
+  const { currentUser, appointments, updateAppointmentStatus, orders, updateOrderStatus, users, products, categories, addProduct, updateProduct, deleteProduct, addCategory, services, addService, updateService, deleteService, promotions, addPromotion, updatePromotion, deletePromotion } = useAppContext();
   const [userSearch, setUserSearch] = useState('');
   const [viewingPetUserId, setViewingPetUserId] = useState<string | null>(null);
   const { pets } = useAppContext();
@@ -14,9 +14,12 @@ export function Admin() {
   );
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [productForm, setProductForm] = useState({ name: '', description: '', price: 0, category: 'Thức ăn', stock: 0, imageUrl: '' });
+  const [productForm, setProductForm] = useState({ name: '', description: '', price: 0, categoryIds: [] as number[], stock: 0, imageUrl: '' });
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('');
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categoryError, setCategoryError] = useState('');
   const [viewingUserOrdersId, setViewingUserOrdersId] = useState<string | null>(null);
   const [adjustingStock, setAdjustingStock] = useState<{ id: string, type: 'import' | 'export' } | null>(null);
   const [adjustAmount, setAdjustAmount] = useState<number>(0);
@@ -68,14 +71,24 @@ export function Admin() {
 
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
+    // Convert categoryIds (so) -> categories (object day du), khop voi type Product
+    const selectedCategories = categories.filter(c => productForm.categoryIds.includes(c.categoryId));
+    const payload = {
+      name: productForm.name,
+      description: productForm.description,
+      price: productForm.price,
+      categories: selectedCategories,
+      stock: productForm.stock,
+      imageUrl: productForm.imageUrl
+    };
     if (editingProductId) {
-      updateProduct(editingProductId, productForm);
+      updateProduct(editingProductId, payload);
     } else {
-      addProduct(productForm);
+      addProduct(payload);
     }
     setShowProductForm(false);
     setEditingProductId(null);
-    setProductForm({ name: '', description: '', price: 0, category: 'Thức ăn', stock: 0, imageUrl: '' });
+    setProductForm({ name: '', description: '', price: 0, categoryIds: [], stock: 0, imageUrl: '' });
   };
 
   const handleEditProduct = (product: any) => {
@@ -83,7 +96,7 @@ export function Admin() {
       name: product.name,
       description: product.description,
       price: product.price,
-      category: product.category,
+      categoryIds: (product.categories || []).map((c: any) => c.categoryId),
       stock: product.stock,
       imageUrl: product.imageUrl || ''
     });
@@ -94,6 +107,24 @@ export function Admin() {
   const handleDeleteProduct = (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa vật tư này?')) {
       deleteProduct(id);
+    }
+  };
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCategoryError('');
+    const name = newCategoryName.trim();
+    if (!name) return;
+    if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      setCategoryError('Danh mục này đã tồn tại');
+      return;
+    }
+    try {
+      await addCategory(name);
+      setNewCategoryName('');
+      setShowCategoryForm(false);
+    } catch (err: any) {
+      setCategoryError(err.message || 'Không thể tạo danh mục, vui lòng thử lại');
     }
   };
 
@@ -425,15 +456,14 @@ export function Admin() {
                     className="px-4 py-3 bg-orange-50/50 rounded-full border border-orange-200 text-sm focus:outline-none focus:border-orange-400"
                   >
                     <option value="">Tất cả danh mục</option>
-                    <option value="Thức ăn">Thức ăn</option>
-                    <option value="Phụ kiện">Phụ kiện</option>
-                    <option value="Thuốc">Thuốc</option>
-                    <option value="Vật tư y tế">Vật tư y tế</option>
+                    {categories.map(cat => (
+                      <option key={cat.categoryId} value={cat.name}>{cat.name}</option>
+                    ))}
                   </select>
                   <button
                     onClick={() => {
                       setEditingProductId(null);
-                      setProductForm({ name: '', description: '', price: 0, category: 'Thức ăn', stock: 0, imageUrl: '' });
+                      setProductForm({ name: '', description: '', price: 0, categoryIds: [], stock: 0, imageUrl: '' });
                       setShowProductForm(!showProductForm);
                     }}
                     className="px-6 py-3 bg-orange-500 text-white font-semibold text-sm rounded-full hover:bg-orange-600 transition-colors"
@@ -458,14 +488,59 @@ export function Admin() {
                       <label className="block text-[10px] uppercase tracking-wider font-semibold text-orange-400 font-bold mb-2">Giá (VNĐ) *</label>
                       <input type="number" required min="0" value={productForm.price} onChange={e => setProductForm({...productForm, price: Number(e.target.value)})} className="w-full bg-white rounded-xl border border-orange-200 text-slate-800 focus:outline-none focus:border-orange-400 p-4 font-sans text-sm" />
                     </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-wider font-semibold text-orange-400 font-bold mb-2">Phân loại *</label>
-                      <select value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})} className="w-full bg-white rounded-xl border border-orange-200 text-slate-800 focus:outline-none focus:border-orange-400 p-4 font-sans text-sm">
-                        <option value="Thức ăn">Thức ăn</option>
-                        <option value="Phụ kiện">Phụ kiện</option>
-                        <option value="Thuốc">Thuốc</option>
-                        <option value="Khác">Khác</option>
-                      </select>
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-orange-400 font-bold">Danh mục * (chọn 1 hoặc nhiều)</label>
+                        <button
+                          type="button"
+                          onClick={() => { setShowCategoryForm(!showCategoryForm); setCategoryError(''); }}
+                          className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 hover:text-indigo-700 transition-colors"
+                        >
+                          {showCategoryForm ? 'Đóng' : '+ Tạo danh mục mới'}
+                        </button>
+                      </div>
+
+                      {showCategoryForm && (
+                        <div className="flex gap-2 mb-4">
+                          <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={e => setNewCategoryName(e.target.value)}
+                            placeholder="Tên danh mục mới (VD: Thuốc)"
+                            className="flex-1 bg-white rounded-xl border border-orange-200 text-slate-800 focus:outline-none focus:border-orange-400 p-3 font-sans text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveCategory}
+                            className="px-6 py-2 bg-indigo-500 text-white font-semibold text-sm rounded-xl hover:bg-indigo-600 transition-colors"
+                          >
+                            Lưu
+                          </button>
+                        </div>
+                      )}
+                      {categoryError && <p className="text-red-500 text-xs font-semibold mb-3">{categoryError}</p>}
+
+                      <div className="flex flex-wrap gap-3">
+                        {categories.length === 0 && (
+                          <span className="text-xs text-orange-400">Chưa có danh mục nào, hãy tạo danh mục trước.</span>
+                        )}
+                        {categories.map(cat => (
+                          <label key={cat.categoryId} className={`flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer text-sm ${productForm.categoryIds.includes(cat.categoryId) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-orange-200 text-slate-800'}`}>
+                            <input
+                              type="checkbox"
+                              className="hidden"
+                              checked={productForm.categoryIds.includes(cat.categoryId)}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...productForm.categoryIds, cat.categoryId]
+                                  : productForm.categoryIds.filter(id => id !== cat.categoryId);
+                                setProductForm({ ...productForm, categoryIds: next });
+                              }}
+                            />
+                            {cat.name}
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider font-semibold text-orange-400 font-bold mb-2">Tồn kho *</label>
@@ -500,7 +575,7 @@ export function Admin() {
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-slate-800 uppercase tracking-wider text-sm line-clamp-2">{p.name}</h4>
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">{p.category}</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">{(p.categories || []).map(c => c.name).join(', ') || 'Chưa phân loại'}</div>
                         <div className="text-orange-500 font-bold mt-2">{formatCurrency(p.price)}</div>
                         <div className="text-[10px] uppercase tracking-widest font-bold text-orange-400 mt-2">Tồn kho: <span className={p.stock < 10 ? 'text-red-500' : 'text-slate-800'}>{p.stock}</span></div>
                       </div>

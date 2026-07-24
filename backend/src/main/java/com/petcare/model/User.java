@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Lop cha - tuong ung class "User" trong Class Diagram
 // Dung JOINED inheritance: Employee/Customer se co bang rieng, FK ve users.id
 @Entity
 @Table(name = "users")

@@ -15,7 +15,6 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
-// Dung voi class AppointmentController trong diagram
 @RestController
 @RequestMapping("/api/appointments")
 public class AppointmentController {

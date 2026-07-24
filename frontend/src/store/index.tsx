@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Pet, Service, Product, Appointment, Order, CartItem, OrderItem, Promotion, ShippingInfo, Role } from '../types';
+import { User, Pet, Service, Product, Appointment, Order, CartItem, OrderItem, Promotion, ShippingInfo, Role, Category } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { apiRequest } from '../lib/api';
 import { INITIAL_SERVICES, INITIAL_PRODUCTS, INITIAL_USERS, INITIAL_PETS } from '../lib/mockData';
@@ -12,6 +12,7 @@ interface AppState {
   pets: Pet[];
   services: Service[];
   products: Product[];
+  categories: Category[];
   promotions: Promotion[];
   appointments: Appointment[];
   orders: Order[];
@@ -43,6 +44,7 @@ interface AppContextType extends AppState {
   addPromotion: (promotion: Omit<Promotion, 'id'>) => Promise<void>;
   updatePromotion: (id: string, promotion: Omit<Promotion, 'id'>) => Promise<void>;
   deletePromotion: (id: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
   addUser: (user: Omit<User, 'id'>) => Promise<void>;
   updateUserRole: (id: string, role: Role) => Promise<void>;
   toggleUserLock: (id: string) => Promise<void>;
@@ -69,6 +71,7 @@ const loadState = (): AppState => {
     }
 
     if (!parsed.promotions) parsed.promotions = [];
+    if (!parsed.categories) parsed.categories = [];
     if (!parsed.appointments) parsed.appointments = [];
     if (!parsed.orders) parsed.orders = [];
     if (!parsed.cart) parsed.cart = [];
@@ -94,6 +97,7 @@ const loadState = (): AppState => {
     pets: INITIAL_PETS,
     services: INITIAL_SERVICES,
     products: INITIAL_PRODUCTS,
+    categories: [],
     promotions: [],
     appointments: [],
     orders: [],
@@ -112,18 +116,25 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
     if (USE_API) {
       const fetchData = async () => {
         try {
-          const [products, services] = await Promise.all([
+          const [products, services, categories] = await Promise.all([
              apiRequest('/products').catch(() => null),
-             apiRequest('/services').catch(() => null)
+             apiRequest('/services').catch(() => null),
+             apiRequest('/categories').catch(() => null)
           ]);
           
           setState(prev => {
              const newState = { ...prev };
+             if (categories && Array.isArray(categories)) {
+               newState.categories = categories.map((c: any) => ({
+                 categoryId: c.categoryId,
+                 name: c.name
+               }));
+             }
              if (products && Array.isArray(products)) {
                newState.products = products.map((p: any) => ({
                  id: String(p.productId),
                  name: p.name,
-                 category: p.category,
+                 categories: (p.categories || []).map((c: any) => ({ categoryId: c.categoryId, name: c.name })),
                  price: p.price,
                  stock: p.stockQuantity,
                  description: p.description || '',
@@ -160,8 +171,8 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         if (response && response.userId) {
           const apiUser: User = {
             id: String(response.userId),
-            name: response.username,
-            email: email, // Use provided email
+            name: response.fullName || response.username,
+            email: email,
             role: response.role.toLowerCase() as any,
             password: password
           };
@@ -199,7 +210,8 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         const response = await apiRequest('/auth/register', {
           method: 'POST',
           body: JSON.stringify({
-            username: userData.name,
+            username: userData.email,
+            fullName: userData.name,
             password: userData.password,
             email: userData.email,
             phoneNumber: userData.phone || '',
@@ -209,7 +221,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         if (response) {
           const apiUser: User = {
             id: String(response.customerId || response.userId || uuidv4()),
-            name: response.username || userData.name,
+            name: response.fullName || userData.name,
             email: response.email || userData.email,
             role: 'customer',
             password: userData.password
@@ -262,7 +274,6 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         const response = await apiRequest('/appointments', {
           method: 'POST',
           body: JSON.stringify({
-            customerId: Number(state.currentUser.id),
             petId: Number(appData.petId),
             date: appData.date,
             time: appData.time,
@@ -280,8 +291,8 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
           return;
         }
       } catch (err) {
-        console.error('API bookAppointment failed, falling back to mock:', err);
-        // Optionally return early if we want strict API enforcement
+        console.error('API bookAppointment failed:', err);
+        throw err; // bao loi thuc su, khong am tham fallback mock
       }
     }
     const newApp: Appointment = {
@@ -294,15 +305,15 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
   };
 
   const addToCart = async (productId: string, quantity: number) => {
-    if (USE_API) {
+    if (USE_API && state.currentUser) {
       try {
-        const { available } = await apiRequest(`/cart/check-stock?productId=${productId}&qty=${quantity}`);
-        if (!available) {
-          alert('Sản phẩm đã hết hàng hoặc không đủ số lượng!');
-          return;
-        }
-      } catch(err) {
-        console.error('API check-stock failed, skipping constraint', err);
+        await apiRequest(
+          `/cart/${state.currentUser.id}/items?productId=${Number(productId)}&quantity=${quantity}`,
+          { method: 'POST' }
+        );
+      } catch (err: any) {
+        alert(err.message || 'Sản phẩm đã hết hàng hoặc không đủ số lượng!');
+        return; // dung lai, khong update state local neu backend tu choi
       }
     }
 
@@ -331,20 +342,19 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
 
     if (USE_API) {
       try {
-        // Sync cart first
-        const cartItems = state.cart.map(item => ({
-          productId: Number(item.productId),
-          quantity: item.quantity
-        }));
-        await apiRequest(`/cart/${state.currentUser.id}/items`, {
-          method: 'PUT',
-          body: JSON.stringify(cartItems)
-        });
-
-        // Create order
+        // Create order -> GUI THEM shippingInfo + paymentMethod (truoc day bi thieu, du lieu nhap bi mat)
         const orderResponse = await apiRequest('/orders', {
           method: 'POST',
-          body: JSON.stringify({ customerId: Number(state.currentUser.id) })
+          body: JSON.stringify({
+            customerId: Number(state.currentUser.id),
+            shippingInfo: {
+              fullName: shippingInfo.fullName,
+              phone: shippingInfo.phone,
+              address: shippingInfo.address,
+              notes: shippingInfo.notes
+            },
+            paymentMethod
+          })
         });
 
         if (orderResponse && orderResponse.orderId) {
@@ -353,27 +363,6 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
              method: 'POST',
              body: JSON.stringify({ orderId: orderResponse.orderId, method: paymentMethod })
           });
-
-          // Deduct stock in backend
-          for (const cartItem of state.cart) {
-            const product = state.products.find(p => p.id === cartItem.productId);
-            if (product) {
-              const newStock = Math.max(0, product.stock - cartItem.quantity);
-              try {
-                await apiRequest(`/products/${product.id}`, {
-                  method: 'PUT',
-                  body: JSON.stringify({
-                    name: product.name,
-                    category: product.category,
-                    price: product.price,
-                    stockQuantity: newStock
-                  })
-                });
-              } catch (e) {
-                console.error('Failed to deduct stock for', product.id, e);
-              }
-            }
-          }
 
           // Mock state update for UI
           const newOrder: Order = {
@@ -392,6 +381,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
           };
 
           setState(prev => {
+            // Chi cap nhat UI cho khop voi thay doi da xay ra o backend, khong goi API tru kho lan nua
             const updatedProducts = prev.products.map(p => {
               const cartItem = prev.cart.find(c => c.productId === p.id);
               if (cartItem) {
@@ -405,6 +395,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         }
       } catch (err: any) {
          console.warn('API checkout failed, falling back to mock:', err);
+         throw err;
       }
     }
     
@@ -489,13 +480,18 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
   const addProduct = async (productData: Omit<Product, 'id'>) => {
     if (USE_API) {
       try {
-        const response = await apiRequest('/products', {
+        const categoryIds = (productData.categories || []).map(c => c.categoryId);
+        const query = categoryIds.length
+          ? '?' + categoryIds.map(id => `categoryIds=${id}`).join('&')
+          : '';
+        const response = await apiRequest(`/products${query}`, {
           method: 'POST',
           body: JSON.stringify({
             name: productData.name,
-            category: productData.category,
             price: productData.price,
-            stockQuantity: productData.stock
+            stockQuantity: productData.stock,
+            description: productData.description,
+            imageUrl: productData.imageUrl
           })
         });
         if (response && response.productId) {
@@ -505,6 +501,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
         }
       } catch (err) {
         console.error('API addProduct failed', err);
+        throw err;
       }
     }
     const newProduct = { ...productData, id: uuidv4() };
@@ -514,17 +511,23 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
   const updateProduct = async (id: string, productData: Omit<Product, 'id'>) => {
     if (USE_API) {
       try {
-         await apiRequest(`/products/${id}`, {
+        const categoryIds = (productData.categories || []).map(c => c.categoryId);
+        const query = categoryIds.length
+          ? '?' + categoryIds.map(cid => `categoryIds=${cid}`).join('&')
+          : '';
+         await apiRequest(`/products/${id}${query}`, {
           method: 'PUT',
           body: JSON.stringify({
             name: productData.name,
-            category: productData.category,
             price: productData.price,
-            stockQuantity: productData.stock
+            stockQuantity: productData.stock,
+            description: productData.description,
+            imageUrl: productData.imageUrl
           })
         });
       } catch (err) {
         console.error('API updateProduct failed', err);
+        throw err;
       }
     }
     setState(prev => ({
@@ -554,9 +557,10 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
           method: 'PUT',
           body: JSON.stringify({
             name: product.name,
-            category: product.category,
             price: product.price,
-            stockQuantity: newStock
+            stockQuantity: newStock,
+            description: product.description,
+            imageUrl: product.imageUrl
           })
         });
        } catch (err) {
@@ -656,6 +660,24 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
     setState(prev => ({ ...prev, promotions: prev.promotions.filter(p => p.id !== id) }));
   };
 
+  const addCategory = async (name: string) => {
+    if (USE_API) {
+      try {
+        const response = await apiRequest('/categories', {
+          method: 'POST',
+          body: JSON.stringify({ name })
+        });
+        if (response && response.categoryId) {
+          setState(prev => ({ ...prev, categories: [...prev.categories, { categoryId: response.categoryId, name: response.name }] }));
+          return;
+        }
+      } catch (err) {
+        console.error('API addCategory failed', err);
+        throw err;
+      }
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       ...state,
@@ -666,6 +688,7 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children })
       updateProfile, updatePet, deletePet,
       addService, updateService, deleteService,
       addPromotion, updatePromotion, deletePromotion,
+      addCategory,
       addUser, updateUserRole, toggleUserLock, deleteUser
     }}>
       {children}

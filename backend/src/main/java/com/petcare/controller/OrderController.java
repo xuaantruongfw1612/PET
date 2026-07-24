@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-// Dung voi class OrderController trong diagram
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -60,7 +59,6 @@ public class OrderController {
 
         double total = 0;
         for (CartItem item : cart.getItems()) {
-            // SUA: CartItem khong co field productId rieng, phai lay qua quan he Product
             Product product = item.getProduct();
             if (product == null || product.getStockQuantity() < item.getQuantity()) {
                 Long pid = product != null ? product.getProductId() : null;

@@ -44,7 +44,7 @@ export function Shop() {
               )}
             </div>
             <div className="p-6 flex-1 flex flex-col">
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-orange-500 font-bold mb-2">{product.category}</div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-orange-500 font-bold mb-2">{(product.categories || []).map(c => c.name).join(', ') || 'Chưa phân loại'}</div>
               <h3 className="font-bold text-lg text-slate-800 uppercase tracking-wider mb-2 line-clamp-1">{product.name}</h3>
               <p className="text-sm text-orange-400 mb-6 line-clamp-2 flex-1">{product.description}</p>
               

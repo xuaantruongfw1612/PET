@@ -8,10 +8,10 @@ export const INITIAL_SERVICES: Service[] = [
 ];
 
 export const INITIAL_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Hạt Royal Canin cho chó lớn', description: 'Thức ăn hạt dinh dưỡng 3kg', price: 450000, category: 'Thức ăn', stock: 20, imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=500&q=80' },
-  { id: 'p2', name: 'Pate Whiskas vị cá ngừ', description: 'Pate cho mèo túi 80g', price: 15000, category: 'Thức ăn', stock: 100, imageUrl: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=500&q=80' },
-  { id: 'p3', name: 'Vòng cổ chống rận', description: 'Vòng cổ thảo mộc chống ve rận', price: 85000, category: 'Phụ kiện', stock: 50, imageUrl: 'https://images.unsplash.com/photo-1602584386319-fa8eb4361c2c?w=500&q=80' },
-  { id: 'p4', name: 'Sữa tắm SOS lông trắng', description: 'Sữa tắm chuyên dụng cho thú cưng lông trắng', price: 120000, category: 'Phụ kiện', stock: 30, imageUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500&q=80' },
+  { id: 'p1', name: 'Hạt Royal Canin cho chó lớn', description: 'Thức ăn hạt dinh dưỡng 3kg', price: 450000, categories: [{ categoryId: 1, name: 'Thức ăn' }], stock: 20, imageUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=500&q=80' },
+  { id: 'p2', name: 'Pate Whiskas vị cá ngừ', description: 'Pate cho mèo túi 80g', price: 15000, categories: [{ categoryId: 1, name: 'Thức ăn' }], stock: 100, imageUrl: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=500&q=80' },
+  { id: 'p3', name: 'Vòng cổ chống rận', description: 'Vòng cổ thảo mộc chống ve rận', price: 85000, categories: [{ categoryId: 2, name: 'Phụ kiện' }], stock: 50, imageUrl: 'https://images.unsplash.com/photo-1602584386319-fa8eb4361c2c?w=500&q=80' },
+  { id: 'p4', name: 'Sữa tắm SOS lông trắng', description: 'Sữa tắm chuyên dụng cho thú cưng lông trắng', price: 120000, categories: [{ categoryId: 2, name: 'Phụ kiện' }], stock: 30, imageUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=500&q=80' },
 ];
 
 export const INITIAL_USERS: User[] = [

@@ -44,12 +44,17 @@ export interface Service {
   isActive: boolean;
 }
 
+export interface Category {
+  categoryId: number;
+  name: string;
+}
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
-  category: string;
+  categories: Category[];
   stock: number;
   imageUrl?: string;
 }

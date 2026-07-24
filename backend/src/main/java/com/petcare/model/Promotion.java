@@ -6,8 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-// Class nay KHONG co trong Class Diagram ban dau, them vao de khop voi
-// tinh nang "Quan ly khuyen mai" ma ban Frontend da thiet ke san (Promotion type).
+// tinh nang "Quan ly khuyen mai"
 @Entity
 @Table(name = "promotions")
 @Data

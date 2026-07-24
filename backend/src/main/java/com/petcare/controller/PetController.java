@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Dung voi class Pet trong diagram
 @RestController
 @RequestMapping("/api/pets")
 public class PetController {

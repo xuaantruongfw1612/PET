@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-// Dung voi class PaymentGateway trong diagram
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
