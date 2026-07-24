@@ -5,90 +5,114 @@ import com.petcare.model.CartItem;
 import com.petcare.model.Product;
 import com.petcare.model.Promotion;
 import com.petcare.repository.CartRepository;
+import com.petcare.repository.CartItemRepository;
 import com.petcare.repository.ProductRepository;
 import com.petcare.repository.PromotionRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-// Dung voi class Cart trong diagram
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
 
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
     private final PromotionRepository promotionRepository;
 
-    public CartController(CartRepository cartRepository, ProductRepository productRepository, PromotionRepository promotionRepository) {
+    public CartController(CartRepository cartRepository,
+                           CartItemRepository cartItemRepository,
+                           ProductRepository productRepository,
+                           PromotionRepository promotionRepository) {
         this.cartRepository = cartRepository;
+        this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
         this.promotionRepository = promotionRepository;
     }
 
-    // Lay cart cua 1 khach hang, neu chua co thi tao moi
     @GetMapping("/{customerId}")
-    public Cart getCart(@PathVariable Long customerId) {
-        return cartRepository.findByCustomerId(customerId).orElseGet(() -> {
-            Cart c = new Cart();
-            c.setCustomerId(customerId);
-            return cartRepository.save(c);
-        });
+    public ResponseEntity<Cart> getCart(@PathVariable Long customerId) {
+        Cart cart = getOrCreateCart(customerId);
+        return ResponseEntity.ok(cart);
     }
 
-    // checkStockQuantity(productId, qty): Boolean
-    @GetMapping("/check-stock")
-    public ResponseEntity<?> checkStockQuantity(@RequestParam Long productId, @RequestParam Integer qty) {
-        Product product = productRepository.findById(productId).orElse(null);
-        boolean ok = product != null && product.getStockQuantity() >= qty;
-        return ResponseEntity.ok(Map.of("available", ok));
-    }
+    @PostMapping("/{customerId}/items")
+    public ResponseEntity<?> addToCart(
+            @PathVariable Long customerId,
+            @RequestParam Long productId,
+            @RequestParam int quantity) {
 
-    // updateCart(items): Boolean -> them/sua/xoa item trong cart
-    @PutMapping("/{customerId}/items")
-    public ResponseEntity<?> updateCart(@PathVariable Long customerId, @RequestBody List<CartItem> items) {
-        Cart cart = getCart(customerId);
+        Cart cart = getOrCreateCart(customerId);
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("San pham khong ton tai"));
 
-        for (CartItem item : items) {
-            Product product = productRepository.findById(item.getProductId()).orElse(null);
-            if (product == null || product.getStockQuantity() < item.getQuantity()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "San pham khong du so luong trong kho"));
-            }
+        if (product.getStockQuantity() < quantity) {
+            return ResponseEntity.badRequest().body("Khong du hang trong kho");
         }
 
-        cart.getItems().clear();
-        for (CartItem item : items) {
-            item.setCart(cart);
-            cart.getItems().add(item);
+        Optional<CartItem> existing = cartItemRepository.findByCartAndProduct(cart, product);
+        if (existing.isPresent()) {
+            CartItem item = existing.get();
+            item.setQuantity(item.getQuantity() + quantity);
+        } else {
+            cart.getItems().add(new CartItem(cart, product, quantity));
         }
+
         cartRepository.save(cart);
         return ResponseEntity.ok(cart);
     }
 
-    // applyDiscountCode(code): Boolean -> tra bang Promotion that (thay vi list cung nhu truoc)
-    @PostMapping("/{customerId}/discount")
-    public ResponseEntity<?> applyDiscountCode(@PathVariable Long customerId, @RequestBody Map<String, String> body) {
-        Cart cart = getCart(customerId);
-        String code = body.get("code");
+    // Ap ma giam gia -> validate qua PromotionRepository (khong con TODO)
+    @PostMapping("/{customerId}/apply-discount")
+    public ResponseEntity<?> applyDiscount(
+            @PathVariable Long customerId,
+            @RequestParam String code) {
 
-        Promotion promo = promotionRepository.findByCode(code).orElse(null);
-        if (promo == null || !Boolean.TRUE.equals(promo.getIsActive())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia khong ton tai hoac da bi tat"));
+        Cart cart = getOrCreateCart(customerId);
+
+        Promotion promotion = promotionRepository.findByCode(code)
+                .orElse(null);
+
+        if (promotion == null) {
+            return ResponseEntity.badRequest().body("Ma giam gia khong ton tai");
+        }
+        if (!Boolean.TRUE.equals(promotion.getIsActive())) {
+            return ResponseEntity.badRequest().body("Ma giam gia da bi tam ngung");
         }
         LocalDate today = LocalDate.now();
-        if (promo.getStartDate() != null && today.isBefore(promo.getStartDate())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia chua den ngay ap dung"));
+        if (promotion.getStartDate() != null && today.isBefore(promotion.getStartDate())) {
+            return ResponseEntity.badRequest().body("Ma giam gia chua den ngay ap dung");
         }
-        if (promo.getEndDate() != null && today.isAfter(promo.getEndDate())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Ma giam gia da het han"));
+        if (promotion.getEndDate() != null && today.isAfter(promotion.getEndDate())) {
+            return ResponseEntity.badRequest().body("Ma giam gia da het han");
         }
 
-        cart.setDiscountCode(code);
-        cart.setDiscountPercent(promo.getDiscountPercent());
+        cart.setPromotion(promotion);
+        cart.setDiscountCode(promotion.getCode());
+        cart.setDiscountPercent(java.math.BigDecimal.valueOf(promotion.getDiscountPercent()));
         cartRepository.save(cart);
         return ResponseEntity.ok(cart);
+    }
+
+    @DeleteMapping("/{customerId}/discount")
+    public ResponseEntity<?> removeDiscount(@PathVariable Long customerId) {
+        Cart cart = getOrCreateCart(customerId);
+        cart.setPromotion(null);
+        cart.setDiscountCode(null);
+        cart.setDiscountPercent(null);
+        cartRepository.save(cart);
+        return ResponseEntity.ok(cart);
+    }
+
+    private Cart getOrCreateCart(Long customerId) {
+        return cartRepository.findByCustomerId(customerId)
+                .orElseGet(() -> {
+                    Cart newCart = new Cart();
+                    newCart.setCustomerId(customerId);
+                    return cartRepository.save(newCart);
+                });
     }
 }

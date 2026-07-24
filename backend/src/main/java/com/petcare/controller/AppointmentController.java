@@ -1,15 +1,17 @@
 package com.petcare.controller;
 
 import com.petcare.model.Appointment;
+import com.petcare.model.AppointmentService;
+import com.petcare.model.Pet;
 import com.petcare.model.Service;
 import com.petcare.repository.AppointmentRepository;
+import com.petcare.repository.PetRepository;
 import com.petcare.repository.ServiceRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -19,25 +21,28 @@ import java.util.Map;
 public class AppointmentController {
 
     private final AppointmentRepository appointmentRepository;
+    private final PetRepository petRepository;
     private final ServiceRepository serviceRepository;
 
-    public AppointmentController(AppointmentRepository appointmentRepository, ServiceRepository serviceRepository) {
+    public AppointmentController(AppointmentRepository appointmentRepository,
+                                  PetRepository petRepository,
+                                  ServiceRepository serviceRepository) {
         this.appointmentRepository = appointmentRepository;
+        this.petRepository = petRepository;
         this.serviceRepository = serviceRepository;
     }
 
-    // getAppointmentList(): List<Appointment>
     @GetMapping
     public List<Appointment> getAppointmentList() {
         return appointmentRepository.findAll();
     }
 
+    // Lay lich hen theo customer -> phai di qua Pet (Appointment khong con luu customerId truc tiep)
     @GetMapping("/customer/{customerId}")
     public List<Appointment> getByCustomer(@PathVariable Long customerId) {
-        return appointmentRepository.findByCustomerId(customerId);
+        return appointmentRepository.findByPet_CustomerId(customerId);
     }
 
-    // checkAvailability(date, time): Boolean -> tuong ung method trong class Appointment
     @GetMapping("/check-availability")
     public ResponseEntity<?> checkAvailability(
             @RequestParam LocalDate date,
@@ -47,7 +52,7 @@ public class AppointmentController {
         return ResponseEntity.ok(Map.of("available", available));
     }
 
-    // createAppointment(data): Boolean
+    // Body: { "petId": ..., "date": "...", "time": "...", "serviceIds": [1, 2] }
     @PostMapping
     public ResponseEntity<?> createAppointment(@RequestBody Map<String, Object> body) {
         LocalDate date = LocalDate.parse((String) body.get("date"));
@@ -57,27 +62,30 @@ public class AppointmentController {
             return ResponseEntity.badRequest().body(Map.of("message", "Khung gio nay da co lich hen khac"));
         }
 
+        Pet pet = petRepository.findById(Long.valueOf(body.get("petId").toString()))
+                .orElseThrow(() -> new RuntimeException("Pet khong ton tai"));
+
         Appointment appointment = new Appointment();
-        appointment.setCustomerId(Long.valueOf(body.get("customerId").toString()));
-        appointment.setPetId(Long.valueOf(body.get("petId").toString()));
+        appointment.setPet(pet);
         appointment.setDate(date);
         appointment.setTime(time);
         appointment.setStatus("PENDING");
 
+        // Them dich vu qua bang trung gian AppointmentService (co luu unitPrice snapshot)
         List<?> serviceIdsRaw = (List<?>) body.get("serviceIds");
-        List<Service> services = new ArrayList<>();
         if (serviceIdsRaw != null) {
             for (Object sid : serviceIdsRaw) {
-                serviceRepository.findById(Long.valueOf(sid.toString())).ifPresent(services::add);
+                Service service = serviceRepository.findById(Long.valueOf(sid.toString()))
+                        .orElseThrow(() -> new RuntimeException("Service khong ton tai: id=" + sid));
+                AppointmentService aps = new AppointmentService(appointment, service, 1);
+                appointment.getAppointmentServices().add(aps);
             }
         }
-        appointment.setServices(services);
 
         Appointment saved = appointmentRepository.save(appointment);
         return ResponseEntity.ok(saved);
     }
 
-    // updateAppointmentTime(id, newTime): Boolean
     @PatchMapping("/{id}/time")
     public ResponseEntity<?> updateAppointmentTime(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);
@@ -96,7 +104,6 @@ public class AppointmentController {
         return ResponseEntity.ok(appointment);
     }
 
-    // rescheduleAppointment(id, newTime): Boolean -> alias goi lai updateAppointmentTime + doi status
     @PatchMapping("/{id}/reschedule")
     public ResponseEntity<?> rescheduleAppointment(@PathVariable Long id, @RequestBody Map<String, String> body) {
         ResponseEntity<?> result = updateAppointmentTime(id, body);
@@ -110,9 +117,6 @@ public class AppointmentController {
         return result;
     }
 
-    // approveAppointment(id): Boolean
-    // Frontend goi endpoint nay khi muon chuyen sang trang thai "confirmed" (status === 'confirmed' -> /approve)
-    // -> set status = CONFIRMED de khop dung (thay vi APPROVED nhu ban dau).
     @PatchMapping("/{id}/approve")
     public ResponseEntity<?> approveAppointment(@PathVariable Long id) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);
@@ -122,9 +126,6 @@ public class AppointmentController {
         return ResponseEntity.ok(appointment);
     }
 
-    // confirmAppointment(id): Boolean
-    // Frontend goi endpoint nay khi muon chuyen sang trang thai "completed" (status === 'completed' -> /confirm)
-    // -> set status = COMPLETED de khop dung (thay vi CONFIRMED nhu ban dau).
     @PatchMapping("/{id}/confirm")
     public ResponseEntity<?> confirmAppointment(@PathVariable Long id) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);
@@ -134,9 +135,6 @@ public class AppointmentController {
         return ResponseEntity.ok(appointment);
     }
 
-    // updateAppointmentStatus chung - dung cho truong hop 'pending'/'cancelled' ben frontend
-    // (fallback trong updateAppointmentStatus() cua frontend, hien tai dang goi thieu body,
-    //  can 1 dong sua ben frontend de gui {status} len - xem API_DOCS.md).
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
         Appointment appointment = appointmentRepository.findById(id).orElse(null);

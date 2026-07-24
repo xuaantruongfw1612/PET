@@ -23,7 +23,6 @@ public class OrderController {
         this.cartRepository = cartRepository;
     }
 
-    // getOrderList(): List<Order>
     @GetMapping
     public List<Order> getOrderList() {
         return orderRepository.findAll();
@@ -34,12 +33,6 @@ public class OrderController {
         return orderRepository.findByCustomerId(customerId);
     }
 
-    // createOrder(cartData, discountCode): Boolean -> tuong ung method trong class Order
-    // Chuyen tu Cart -> tao Order + OrderDetail, tru stock, tao Payment (PENDING)
-    //
-    // Frontend hien tai (checkout()) CHUA gui "shippingInfo"/"paymentMethod" trong body nay
-    // (chi gui {customerId}) -> 2 field nay se null cho toi khi frontend duoc sua 1 dong
-    // de gui them, xem ghi chu trong API_DOCS.md muc "Can frontend sua".
     @PostMapping
     @SuppressWarnings("unchecked")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> body) {
@@ -53,7 +46,6 @@ public class OrderController {
         order.setCustomerId(customerId);
         order.setStatus("PENDING");
 
-        // Doc shippingInfo neu frontend co gui (optional, khong bat buoc)
         Object shippingRaw = body.get("shippingInfo");
         if (shippingRaw instanceof Map) {
             Map<String, Object> shipping = (Map<String, Object>) shippingRaw;
@@ -68,10 +60,13 @@ public class OrderController {
 
         double total = 0;
         for (CartItem item : cart.getItems()) {
-            Product product = productRepository.findById(item.getProductId()).orElse(null);
+            // SUA: CartItem khong co field productId rieng, phai lay qua quan he Product
+            Product product = item.getProduct();
             if (product == null || product.getStockQuantity() < item.getQuantity()) {
-                return ResponseEntity.badRequest().body(Map.of("message", "San pham " + item.getProductId() + " khong du hang"));
+                Long pid = product != null ? product.getProductId() : null;
+                return ResponseEntity.badRequest().body(Map.of("message", "San pham " + pid + " khong du hang"));
             }
+
             OrderDetail detail = new OrderDetail();
             detail.setOrder(order);
             detail.setProductId(product.getProductId());
@@ -81,29 +76,23 @@ public class OrderController {
 
             total += product.getPrice() * item.getQuantity();
 
-            // Tru stock
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
             productRepository.save(product);
         }
 
-        // Ap dung % giam gia thuc te tu Promotion (thay vi hardcode 10% nhu truoc)
         if (cart.getDiscountCode() != null && cart.getDiscountPercent() != null) {
-            total = total * (1 - cart.getDiscountPercent() / 100.0);
+            total = total * (1 - cart.getDiscountPercent().doubleValue() / 100.0);
         }
         order.setTotalAmount(total);
 
         Order saved = orderRepository.save(order);
 
-        // Xoa cart sau khi tao order
-        cart.getItems().clear();
-        cart.setDiscountCode(null);
-        cart.setDiscountPercent(null);
+        cart.markAsCheckedOut();
         cartRepository.save(cart);
 
         return ResponseEntity.ok(saved);
     }
 
-    // updateOrderStatus(status): Boolean
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Order order = orderRepository.findById(id).orElse(null);
@@ -113,11 +102,6 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    // approveOrder(id): Boolean
-    // Frontend goi CHUNG endpoint nay cho ca 2 truong hop "processing" va "completed"
-    // (khong the phan biet duoc tu phia backend vi khong gui du lieu gi khac nhau len).
-    // -> Xu ly bang 2 nac: lan dau bam duyet (PENDING) -> PROCESSING, bam duyet tiep -> COMPLETED.
-    // Cach nay khong can sua gi ben Frontend ca.
     @PatchMapping("/{id}/approve")
     public ResponseEntity<?> approveOrder(@PathVariable Long id, @RequestParam(required = false) Long employeeId) {
         Order order = orderRepository.findById(id).orElse(null);
@@ -133,8 +117,6 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    // rejectOrder(id, reason): Boolean -> giu status "sach" la CANCELLED, ly do luu rieng o cancelReason
-    // (frontend chi mong doi status la 1 trong 4 gia tri pending/processing/completed/cancelled)
     @PatchMapping("/{id}/reject")
     public ResponseEntity<?> rejectOrder(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Order order = orderRepository.findById(id).orElse(null);
@@ -145,7 +127,6 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
-    // exportOrderReport(): File -> demo tra ve JSON tong hop, co the mo rong xuat CSV/PDF
     @GetMapping("/report")
     public ResponseEntity<?> exportOrderReport() {
         List<Order> orders = orderRepository.findAll();

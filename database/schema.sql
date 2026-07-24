@@ -11,6 +11,17 @@ CREATE DATABASE IF NOT EXISTS petcare_db
 
 USE petcare_db;
 
+ALTER TABLE carts 
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    ADD COLUMN created_at TIMESTAMP,
+    ADD COLUMN updated_at TIMESTAMP;
+
+ALTER TABLE carts MODIFY discount_percent DECIMAL(5,2);
+
+ALTER TABLE cart_items 
+    ADD COLUMN unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ADD UNIQUE (cart_id, product_id);
+
 -- (Optional) Du lieu mau de test nhanh sau khi Hibernate da tao bang.
 -- Chay phan INSERT nay SAU KHI da start app Spring Boot lan dau (de bang duoc tao).
 
